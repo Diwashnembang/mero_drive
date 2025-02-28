@@ -57,34 +57,33 @@ export class Controller {
     }
   }
   async upload(req: Request, res: Response) {
-    let userid: string = req.body.userId
-    let uploadPath:string =  path.join(os.homedir() , `/mero_drive_uploads/${userid}`)
+    let userid: string = req.body.userId;
 
-    if(!userid){
-        res.status(400).send("NO user id")
+    if (!userid) {
+      res.status(400).send("NO user id");
     }
-    let uploadDetail : Prisma.UploadsCreateInput = {
-        path : uploadPath,
-        user : {
-            connect:{
-                id : userid
-            }
-        }
-    }
-    if(req.files === undefined || !Array.isArray(req.files)){
-      res.status(400).send('No file uploaded'); 
-      return
+    if (req.files === undefined || !Array.isArray(req.files)) {
+      res.status(400).send("No file uploaded");
+      return;
     }
     let promises = req.files.map((file: Express.Multer.File) => {
-        return storeFilesToDB(uploadDetail);
+      const uploadDetail: Prisma.UploadsCreateInput = {
+        path: file.path,
+        user: {
+          connect: {
+            id: userid,
+          },
+        },
+      };
+      return storeFilesToDB(uploadDetail);
     });
-    
+
     try {
-        await Promise.all(promises);
-        res.status(200).send('Files uploaded successfully');
+      await Promise.all(promises);
+      res.status(200).send("Files uploaded successfully");
     } catch (error) {
-        console.error(error);
-        res.status(500).send('Error uploading files');
+      console.error(error);
+      res.status(500).send("Error uploading files");
     }
-}
+  }
 }
