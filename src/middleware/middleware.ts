@@ -25,7 +25,7 @@ export function isAuth(req: Request, res: Response, next: NextFunction) {
                 res.status(401).send('Unauthorized');
                 return;
             }
-            if (Date.now() / sec > decoded.exp!) {
+            if (Date.now() > decoded.exp!) {
                 res.status(401).send('Unauthorized session expired');
                 return;
             }

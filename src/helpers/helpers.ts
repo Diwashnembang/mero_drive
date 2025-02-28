@@ -8,9 +8,9 @@ export const day = 24 * hour
 
 export function signJWTToken(email: string):string{
     let token: string = jwt.sign({
-        exp: Math.floor(Date.now() / sec) + (min),
+        exp: Math.floor(Date.now() + (15 * min)) ,
         sub : email,
-        iat: Math.floor(Date.now() / sec)
+        iat: Math.floor(Date.now() )
 
     }, process.env.JWT_SECRET as string)
     return token

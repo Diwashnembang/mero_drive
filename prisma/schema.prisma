@@ -12,5 +12,15 @@ model User {
   email    String   @unique
   name     String?
   password String
+  uploads  Uploads[]
   createdAt DateTime @default(now())
+}
+
+
+model Uploads {
+  id        String   @id @default(cuid())
+  path      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
 }

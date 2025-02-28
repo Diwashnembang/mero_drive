@@ -1,7 +1,11 @@
 import { Request, Response } from "express";
 import { createUser, findUser } from "../modles/users.modles";
-import { Prisma, User} from "@prisma/client";
+import { Prisma, User } from "@prisma/client";
 import { signJWTToken } from "../helpers/helpers";
+import path from "path";
+import os from "os";
+import fs from "fs";
+import { storeFilesToDB } from "../modles/uploads.modles";
 
 export class Controller {
   constructor() {}
@@ -14,10 +18,17 @@ export class Controller {
         res.status(400).send("Invalid request");
         return;
       }
-      await createUser(user);
+      let customer: User = await createUser(user);
       let signedToken: string = signJWTToken(user.email);
-      res.cookie("authToken", `Bearer ${signedToken}`)
-      res.send("User created");
+      res.cookie("authToken", `Bearer ${signedToken}`);
+      let uploadPath: string = path.join(
+        os.homedir(),
+        `/mero_drive_uploads/${customer.id}`
+      );
+      fs.mkdir(uploadPath, { recursive: true }, (err) => {
+        if (err) throw err;
+      });
+      res.redirect("/");
     } catch (e) {
       console.error(e);
       res.status(400).send(`invalid request `);
@@ -26,26 +37,54 @@ export class Controller {
   }
 
   async login(req: Request, res: Response) {
-    let user : User 
-    let userInfo: Prisma.UserCreateInput 
-    try{
-        userInfo= req.body as Prisma.UserCreateInput;
-        if (!userInfo.email || !userInfo.password) {
-            console.error("empty emial or password");
-            res.status(400).send("Invalid request");
-            return;
-        }
-        user = await findUser(userInfo.email, userInfo.password);
-        let signedToken: string = signJWTToken(user.email);
-        res.cookie("authToken", `Bearer ${signedToken}`)
-        res.send("User logged in");
-        
-    }catch(e){
-        console.error(e);
-        res.status(400).send(`invalid request `);
+    let user: User;
+    let userInfo: Prisma.UserCreateInput;
+    try {
+      userInfo = req.body as Prisma.UserCreateInput;
+      if (!userInfo.email || !userInfo.password) {
+        console.error("empty emial or password");
+        res.status(400).send("Invalid request");
         return;
+      }
+      user = await findUser(userInfo.email, userInfo.password);
+      let signedToken: string = signJWTToken(user.email);
+      res.cookie("authToken", `Bearer ${signedToken}`);
+      res.redirect("/");
+    } catch (e) {
+      console.error(e);
+      res.status(400).send(`invalid request `);
+      return;
     }
-    
-
   }
+  async upload(req: Request, res: Response) {
+    let userid: string = req.body.userId
+    let uploadPath:string =  path.join(os.homedir() , `/mero_drive_uploads/${userid}`)
+
+    if(!userid){
+        res.status(400).send("NO user id")
+    }
+    let uploadDetail : Prisma.UploadsCreateInput = {
+        path : uploadPath,
+        user : {
+            connect:{
+                id : userid
+            }
+        }
+    }
+    if(req.files === undefined || !Array.isArray(req.files)){
+      res.status(400).send('No file uploaded'); 
+      return
+    }
+    let promises = req.files.map((file: Express.Multer.File) => {
+        return storeFilesToDB(uploadDetail);
+    });
+    
+    try {
+        await Promise.all(promises);
+        res.status(200).send('Files uploaded successfully');
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error uploading files');
+    }
+}
 }
