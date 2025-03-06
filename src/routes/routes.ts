@@ -30,7 +30,7 @@ router.get('/', (req, res) => {
     res.send('Hello World');
 });
 router.post("/upload",upload.array('uploads'),controller.upload)
-
+router.post("/delete", controller.remove)
 
 
 export default router;

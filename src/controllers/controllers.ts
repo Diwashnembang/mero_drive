@@ -1,11 +1,13 @@
 import { Request, Response } from "express";
 import { createUser, findUser } from "../modles/users.modles";
-import { Prisma, User } from "@prisma/client";
+import { Prisma, Uploads, User } from "@prisma/client";
 import { signJWTToken } from "../helpers/helpers";
 import path from "path";
 import os from "os";
 import fs from "fs";
-import { storeFilesToDB } from "../modles/uploads.modles";
+import { deleteFilesFromDB, getFilesPath, storeFilesToDB } from "../modles/uploads.modles";
+import { CustomRequest } from "../middleware/middleware";
+import { stripTypeScriptTypes } from "module";
 
 export class Controller {
   constructor() {}
@@ -36,7 +38,7 @@ export class Controller {
     }
   }
 
-  async login(req: Request, res: Response) {
+  async login(req: CustomRequest, res: Response) {
     let user: User;
     let userInfo: Prisma.UserCreateInput;
     try {
@@ -84,6 +86,46 @@ export class Controller {
     } catch (error) {
       console.error(error);
       res.status(500).send("Error uploading files");
+    }
+  }
+
+  async remove(req: CustomRequest, res: Response) {
+    let user = req.user;
+    console.log(user)
+    if (!user) {
+      res.status(400).send("No user found");
+      return;
+    }
+
+    let ids: string[] = req.body.ids;
+    if (!ids) {
+      res.status(400).send("No id's found");
+      return;
+    }
+    
+    let files: Uploads[] = [];
+    try {
+      files = await getFilesPath(user, ids);
+    } catch (error) {
+      console.error("error getting file path from db",error);
+      res.status(500).send("Error deleting files");
+      return;
+    }
+
+    try {
+      files.forEach((file: Uploads) => {
+        fs.unlink(file.path, (err) => {
+          if (err) {
+            console.error(err);
+            throw err
+          }
+        });
+      });
+      await deleteFilesFromDB(user,ids)
+      res.status(200).send("Files deleted successfully");
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Error deleting files from storage");
     }
   }
 }

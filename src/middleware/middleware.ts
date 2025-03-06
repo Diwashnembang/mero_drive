@@ -1,8 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt  from 'jsonwebtoken';
-import { sec } from '../helpers/helpers';
 
-export function isAuth(req: Request, res: Response, next: NextFunction) {
+export interface CustomRequest extends Request {
+    user?: string;
+}
+
+export function isAuth(req: CustomRequest, res: Response, next: NextFunction) {
     console.log(req.path);
     const token:string = req.cookies.authToken 
     if (!token) {
@@ -29,6 +32,7 @@ export function isAuth(req: Request, res: Response, next: NextFunction) {
                 res.status(401).send('Unauthorized session expired');
                 return;
             }
+            req.user = decoded.sub
         });
     } catch (err) {
         res.status(401).send('Unauthorized');
