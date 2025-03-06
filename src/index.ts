@@ -7,7 +7,7 @@ import os from 'os';
 import fs from 'fs';
 dotenv.config();
 const app = express();
-const port = 3000;
+const port = 8000;
 
 try {
     fs.mkdir(os.homedir() + '/mero_drive_uploads', { recursive: true }, (err) => {

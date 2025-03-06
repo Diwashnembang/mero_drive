@@ -31,6 +31,8 @@ router.get('/', (req, res) => {
 });
 router.post("/upload",upload.array('uploads'),controller.upload)
 router.post("/delete", controller.remove)
+router.get("/f/:id", controller.getSharedFile)
+router.post("/update",controller.updateIsSharedState)
 
 
 export default router;

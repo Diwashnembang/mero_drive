@@ -5,9 +5,9 @@ import { signJWTToken } from "../helpers/helpers";
 import path from "path";
 import os from "os";
 import fs from "fs";
-import { deleteFilesFromDB, getFilesPath, storeFilesToDB } from "../modles/uploads.modles";
+import { deleteFilesFromDB, getFilesPath, getSharedFilePath, storeFilesToDB, updateIsShared } from "../modles/uploads.modles";
 import { CustomRequest } from "../middleware/middleware";
-import { stripTypeScriptTypes } from "module";
+import { get } from "http";
 
 export class Controller {
   constructor() {}
@@ -51,7 +51,7 @@ export class Controller {
       user = await findUser(userInfo.email, userInfo.password);
       let signedToken: string = signJWTToken(user.email);
       res.cookie("authToken", `Bearer ${signedToken}`);
-      res.redirect("/");
+      res.status(300).redirect("/");
     } catch (e) {
       console.error(e);
       res.status(400).send(`invalid request `);
@@ -63,6 +63,7 @@ export class Controller {
 
     if (!userid) {
       res.status(400).send("NO user id");
+      return
     }
     if (req.files === undefined || !Array.isArray(req.files)) {
       res.status(400).send("No file uploaded");
@@ -91,7 +92,7 @@ export class Controller {
 
   async remove(req: CustomRequest, res: Response) {
     let user = req.user;
-    console.log(user)
+    console.log("this is user" , user)
     if (!user) {
       res.status(400).send("No user found");
       return;
@@ -101,6 +102,10 @@ export class Controller {
     if (!ids) {
       res.status(400).send("No id's found");
       return;
+    }
+    if(!Array.isArray(ids)){
+      res.status(400).send("ids should be an array")  
+      return 
     }
     
     let files: Uploads[] = [];
@@ -126,6 +131,69 @@ export class Controller {
     } catch (err) {
       console.error(err);
       res.status(500).send("Error deleting files from storage");
+    }
+  }
+
+  async getSharedFile(req: CustomRequest, res: Response) {
+    let id: string = req.params.id;
+    if (!id) {
+      res.status(400).send("No file id found");
+      return;
+    }
+    try{
+      let file : Uploads =  await getSharedFilePath(id)
+      if(!file.shared){
+        res.status(400).send("file is not shared")
+        return
+      }
+      res.status(200).sendFile(file.path,(err)=>{
+        if(err){
+          console.error(err)
+          res.status(500).send("Error getting file")
+          return
+        }
+      }
+      )}catch(err){
+      console.error(err)
+      res.status(500).send("Error getting file")
+      return
+    }
+  }
+
+  async updateIsSharedState(req: CustomRequest, res: Response) {
+    let email: string| undefined = req.user;
+    let id: string[] = req.body.id;
+    let isShared: boolean = req.body.isShared;
+    if(!isShared){
+      res.status(400).send("isShared should be a boolean")  
+      return 
+    }
+
+    if (!id) {
+      res.status(400).send("No file id found");
+      return;
+    }
+    if(!Array.isArray(id)){
+      res.status(400).send("ids should be an array")
+      return
+    }
+    if (!email) {
+      res.status(400).send("No user found");
+      return;
+    }
+    try{
+      let promises : any[] = []
+      let files : Uploads[] = await getFilesPath(email,id)
+      files.forEach((file:Uploads)=>{
+        promises.push(updateIsShared(email,file.id,isShared))
+      })
+      await Promise.all(promises)
+      res.status(200).send("Files shared state updated successfully")
+      return 
+    }catch(err){
+      console.error(err)
+      res.status(500).send("Error getting files")
+      return
     }
   }
 }

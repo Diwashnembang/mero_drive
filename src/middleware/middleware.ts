@@ -33,10 +33,10 @@ export function isAuth(req: CustomRequest, res: Response, next: NextFunction) {
                 return;
             }
             req.user = decoded.sub
+            next();
         });
     } catch (err) {
         res.status(401).send('Unauthorized');
         return;
     }
-    next();
 }
