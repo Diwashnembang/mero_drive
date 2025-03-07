@@ -23,5 +23,5 @@ model Uploads {
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
   userId    String
-  Shared  Boolean @default(false)
+  shared  Boolean @default(false)
 }
