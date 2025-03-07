@@ -50,7 +50,9 @@ export class Controller {
       }
       user = await findUser(userInfo.email, userInfo.password);
       let signedToken: string = signJWTToken(user.email);
-      res.cookie("authToken", `Bearer ${signedToken}`);
+      res.cookie("authToken", `Bearer ${signedToken}`,{
+        httpOnly:true
+      });
       res.status(300).redirect("/");
     } catch (e) {
       console.error(e);
