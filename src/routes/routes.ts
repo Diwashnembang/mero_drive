@@ -11,6 +11,7 @@ const controller = new Controller();
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         let userId = req.body.userId
+        console.log("from multer", userId)
         let uploadPath: string = path.join(
         os.homedir(),`/mero_drive_uploads/${userId}`)
         cb(null, uploadPath)
@@ -33,6 +34,8 @@ router.post("/upload",upload.array('uploads'),controller.upload)
 router.post("/delete", controller.remove)
 router.get("/f/:id", controller.getSharedFile)
 router.post("/update",controller.updateIsSharedState)
+router.get("/getAllID",controller.getAllFilesID)
+router.get("/file/:id",controller.getFilesByID)
 
 
 export default router;

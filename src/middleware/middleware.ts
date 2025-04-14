@@ -7,13 +7,15 @@ export interface CustomRequest extends Request {
 
 export function isAuth(req: CustomRequest, res: Response, next: NextFunction) {
     console.log(req.path);
-    const token:string = req.cookies.authToken 
+    const token:string = req.cookies.access_token
+    console.log(token)
     if (!token) {
         res.status(401).send('Unauthorized: No token provided');
         return;
     }
 
     if (token.split(" ")[0] !== 'Bearer') {
+        console.log('No Bearer token');
         res.status(401).send('Unauthorized no Bearer');
         return;
     }

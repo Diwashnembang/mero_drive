@@ -64,9 +64,6 @@ export async function getFilesPath(user: string, id: string[]): Promise<Uploads[
         ]
       },
     });
-    if (id.length !== files.length) {
-      throw new Error("Some of the files ids are not found");
-    }
     return files;
   } catch (err) {
     throw err;
@@ -112,6 +109,46 @@ export async function getSharedFilePath(id: string): Promise<Uploads> {
         throw new Error("Could not update files");
       }
       return true;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  export async function getAllUsersFilesID(userId: string): Promise<Uploads[]> {
+    try {
+      let files: Uploads[] = await prisma.uploads.findMany({
+        where: {
+              user: {
+                id: userId,
+              },
+        },
+      });
+      return files;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  export async function getOneFilePathByID(user : string , id: string): Promise<Uploads> {
+    try {
+      let file: Uploads | null = await prisma.uploads.findFirst({
+        where: {
+          AND: [
+            {
+              user: {
+                email: user,
+              },
+            },
+            {
+              id: id,
+            },
+          ],
+        },
+      });
+      if (!file) {
+        throw new Error("File not found");
+      }
+      return file;
     } catch (err) {
       throw err;
     }
