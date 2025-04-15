@@ -18,9 +18,22 @@ try {
     process.exit(1);
 }
 
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://mero-drive-frontend.vercel.app'
+];
+
 app.use(cors({
-    origin:"http://localhost:5173",
-    credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like curl or Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true // 👈 important if you're using cookies
 }));
 app.use(express.json());
 app.use(cookieParser());
