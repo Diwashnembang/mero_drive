@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { isAuth } from "../middleware/middleware";
+import { CustomRequest, isAuth } from "../middleware/middleware";
 import { Controller } from "../controllers/controllers";
 import multer from "multer";
 import path from "path";
@@ -9,8 +9,8 @@ import os from "os";
 const router = Router();
 const controller = new Controller();
 const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        let userId = req.body.userId
+    destination: function (req : CustomRequest, file, cb) {
+        let userId = req.userId as string
         console.log("from multer", userId)
         let uploadPath: string = path.join(
         os.homedir(),`/mero_drive_uploads/${userId}`)

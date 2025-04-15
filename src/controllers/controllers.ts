@@ -30,7 +30,6 @@ export class Controller {
       }
       let customer: User = await createUser(user);
       let signedToken: string = signJWTToken(user.email, customer.id);
-      res.cookie("authToken", `Bearer ${signedToken}`);
       let uploadPath: string = path.join(
         os.homedir(),
         `/mero_drive_uploads/${customer.id}`
@@ -38,7 +37,7 @@ export class Controller {
       fs.mkdir(uploadPath, { recursive: true }, (err) => {
         if (err) throw err;
       });
-      res.redirect("/");
+      res.status(200).send(signedToken)
     } catch (e) {
       console.error(e);
       res.status(400).send(`invalid request `);
@@ -69,8 +68,8 @@ export class Controller {
       return;
     }
   }
-  async upload(req: Request, res: Response) {
-    let userid: string = req.body.userId;
+  async upload(req: CustomRequest, res: Response) {
+    let userid: string = req.userId as string;
 
     if (!userid) {
       res.status(400).send("NO user id");
@@ -208,9 +207,14 @@ export class Controller {
     }
   }
 
-  async getAllFilesID(req: Request, res: Response) {
-    let userId: string = req.body.userId;
+  async getAllFilesID(req: CustomRequest, res: Response) {
+    let userId: string = req.userId as string
+    console.log("this is userID",userId)
     let ids: string[] = [];
+    if(!userId) {
+      res.status(400).send("No user id found");
+     return 
+    }
     try {
       let filePaths: Uploads[] = await getAllUsersFilesID(userId);
       if (filePaths.length === 0) {

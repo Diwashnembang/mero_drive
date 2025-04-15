@@ -3,6 +3,7 @@ import jwt  from 'jsonwebtoken';
 
 export interface CustomRequest extends Request {
     user?: string;
+    userId?:string
 }
 
 export function isAuth(req: CustomRequest, res: Response, next: NextFunction) {
@@ -35,6 +36,7 @@ export function isAuth(req: CustomRequest, res: Response, next: NextFunction) {
                 return;
             }
             req.user = decoded.sub
+            req.userId = decoded.userId
             next();
         });
     } catch (err) {
