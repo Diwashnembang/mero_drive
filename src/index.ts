@@ -7,7 +7,7 @@ import os from 'os';
 import fs from 'fs';
 dotenv.config();
 const app = express();
-const port = 8000;
+const port = 8006;
 
 try {
     fs.mkdir(os.homedir() + '/mero_drive_uploads', { recursive: true }, (err) => {
@@ -19,7 +19,7 @@ try {
 }
 
 app.use(cors({
-    origin: 'http://localhost:5173',
+    origin:"http://localhost:5173",
     credentials: true
 }));
 app.use(express.json());
