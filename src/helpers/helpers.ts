@@ -9,10 +9,11 @@ export const sec = 1 * 1000
 export const min = 60 * sec
 export const hour = 60 * min
 export const day = 24 * hour
+export const tokenExpireTime = 15 * min
 
 export function signJWTToken(email: string,userId : string):string{
     let token: string = jwt.sign({
-        exp: Math.floor(Date.now() + (15 * min)) ,
+        exp: Math.floor(Date.now() + (15 * tokenExpireTime)) ,
         sub : email,
         iat: Math.floor(Date.now() ),
         userId: userId

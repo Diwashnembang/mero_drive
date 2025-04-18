@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { createUser, findUser } from "../modles/users.modles";
 import { Prisma, Uploads, User } from "@prisma/client";
-import { signJWTToken, streamFile, streamVideo } from "../helpers/helpers";
+import { signJWTToken, streamFile, streamVideo, tokenExpireTime } from "../helpers/helpers";
 import path from "path";
 import os from "os";
 import fs from "fs";
@@ -37,6 +37,12 @@ export class Controller {
       fs.mkdir(uploadPath, { recursive: true }, (err) => {
         if (err) throw err;
       });
+      res.cookie("access_token", `Bearer ${signedToken}`,{
+          httpOnly:true,
+          sameSite: "none",
+          secure: true,
+          expires: new Date(Date.now() + tokenExpireTime) 
+        });
       res.status(200).send(signedToken)
     } catch (e) {
       console.error(e);
@@ -57,11 +63,13 @@ export class Controller {
       }
       user = await findUser(userInfo.email, userInfo.password);
       let signedToken: string = signJWTToken(user.email, user.id);
+        res.cookie("access_token", `Bearer ${signedToken}`,{
+          httpOnly:true,
+          sameSite: "none",
+          secure: true,
+          expires: new Date(Date.now() + tokenExpireTime)
+        });
       res.status(200).send(signedToken);
-      //   res.cookie("authToken", `Bearer ${signedToken}`,{
-      //     httpOnly:true
-      //   });
-      //   res.status(300).redirect("/");
     } catch (e) {
       console.error(e);
       res.status(400).send(`invalid request `);
