@@ -8,10 +8,14 @@ export interface CustomRequest extends Request {
 
 export function isAuth(req: CustomRequest, res: Response, next: NextFunction) {
     console.log(req.path);
-    const token:string = req.headers["authorization"] as string
+    let token:string = req.headers["authorization"] as string
+    
     if (!token) {
+        token = req.cookies.access_token
+        if(!token){
         res.status(401).send('Unauthorized: No token provided');
         return;
+        }
     }
 
     if (token.split(" ")[0] !== 'Bearer') {

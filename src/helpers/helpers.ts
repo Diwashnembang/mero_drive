@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken" 
 import bcrypt from "bcrypt"
 import fs from "fs"
-import { Response } from "express"
+import { Response, Request } from "express"
 import { mimeTypes } from "./mimeTypes"
 import path from "path"
 
@@ -44,14 +44,86 @@ export async function comparePassword(password: string, hash: string):Promise<bo
     return result
 }
 
-export function streamFile(filepath:string, res: Response){
-    let readStream = fs.createReadStream(filepath,{
-        highWaterMark: 1024 * 1024 * 10, // 10MB chunks
-    })
+export function streamFile(filepath:string, res: Response , req: Request){
+     const stat = fs.statSync(filepath);
+  const fileSize = stat.size;
+  const range = req.headers.range;
+
+  const contentType = mimeTypes[path.extname(filepath)] || 'application/octet-stream';
+
+  if (range) {
+    // Example: "bytes=1000-"
+    const parts = range.replace(/bytes=/, "").split("-");
+    const start = parseInt(parts[0], 10);
+    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+    if (start >= fileSize) {
+      res.status(416).send('Requested range not satisfiable');
+      return;
+    }
+
+    const chunkSize = end - start + 1;
+    const fileStream = fs.createReadStream(filepath, { start, end });
+
+    res.writeHead(206, {
+      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+      'Accept-Ranges': 'bytes',
+      'Content-Length': chunkSize,
+      'Content-Type': contentType,
+    });
+
+    fileStream.pipe(res);
+  } else {
+    // No range header, send full file or metadata
+    if (contentType.split("/")[0] === 'video') {
+        res.status(200).json({
+      name: path.basename(filepath),
+      size: fileSize,
+      type: contentType,
+      lastModified: stat.mtime,
+    }); 
+    return 
+    }
     res.writeHead(200, {
-        'Content-Type': mimeTypes[path.extname(filepath)] || 'application/octet-stream',
-        'Content-Disposition': `attachment; filename=${path.basename(filepath)}`,
-        'Content-Length': fs.statSync(filepath).size,
-    })
-    readStream.pipe(res)
+      'Content-Length': fileSize,
+      'Content-Type': contentType,
+      'Content-Disposition': `attachment; filename=${path.basename(filepath)}`
+    });
+    fs.createReadStream(filepath).pipe(res);
+  }
+}
+
+export function streamVideo(req: Request, res: Response , filepath: string){
+    const stat = fs.statSync(filepath);
+  const fileSize = stat.size;
+  const range = req.headers.range;
+
+  const contentType = mimeTypes[path.extname(filepath)] || 'application/octet-stream';
+    if(!range){
+        res.status(400).json({
+            value: "no range header",
+        })
+        return 
+    }
+    const parts = range.replace(/bytes=/, "").split("-");
+    const start = parseInt(parts[0], 10);
+    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+    if (start >= fileSize) {
+      res.status(416).send('Requested range not satisfiable');
+      return;
+    }
+
+    const chunkSize = end - start + 1;
+    const fileStream = fs.createReadStream(filepath, { start, end });
+
+    res.writeHead(206, {
+      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+      'Accept-Ranges': 'bytes',
+      'Content-Length': chunkSize,
+      'Content-Type': contentType,
+    });
+
+    fileStream.pipe(res);
+
 }

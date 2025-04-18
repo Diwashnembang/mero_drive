@@ -36,6 +36,7 @@ router.get("/f/:id", controller.getSharedFile)
 router.post("/update",controller.updateIsSharedState)
 router.get("/getAllID",controller.getAllFilesID)
 router.get("/file/:id",controller.getFilesByID)
+router.get("/stream/:id",controller.getStreamVideo)
 
 
 export default router;

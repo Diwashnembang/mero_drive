@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { createUser, findUser } from "../modles/users.modles";
 import { Prisma, Uploads, User } from "@prisma/client";
-import { signJWTToken, streamFile } from "../helpers/helpers";
+import { signJWTToken, streamFile, streamVideo } from "../helpers/helpers";
 import path from "path";
 import os from "os";
 import fs from "fs";
@@ -249,11 +249,36 @@ export class Controller {
     }
     try {
       let file: Uploads = await getOneFilePathByID(user, id);
-      streamFile(file.path, res);
+      streamFile(file.path, res , req);
     } catch (err) {
       console.error(err);
       res.status(500).send("Error getting fiie");
       return;
     }
+  }
+  async getStreamVideo(req: CustomRequest, res: Response) {
+    let id: string = req.params.id;
+    let user: string | undefined = req.user;
+    if (!user) {
+      res.status(400).send("No user id found");
+      return;
+    }
+    if (!id) {
+      res.status(400).send("No file id found");
+      return;
+    }
+    if (typeof id !== "string") {
+      res.status(400).send("ids should be a string");
+      return;
+    }
+    try {
+      let file: Uploads = await getOneFilePathByID(user, id);
+      streamVideo(req,res, file.path);
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Error getting fiie");
+      return;
+    }
+
   }
 }
