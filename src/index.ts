@@ -19,10 +19,10 @@ try {
 }
 
 const allowedOrigins = [
-  'http://localhost:5173',
+  'https://localhost:5173',
   'https://mero-drive-frontend.vercel.app'
 ];
-
+app.set('trust proxy', true);
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like curl or Postman)
