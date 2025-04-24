@@ -5,6 +5,8 @@ import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import os from 'os';
 import fs from 'fs';
+import https from 'https';
+import path from 'path';
 dotenv.config();
 const app = express();
 const port = 8006;
@@ -39,7 +41,17 @@ app.use(express.json());
 app.use(cookieParser());
 app.use("/",router);
 
-
-app.listen(port,()=>{
-    console.log(`Server is running on port ${port}`);
-});
+if (process.env.NODE_ENV === 'development') {
+  const options = {
+    key: fs.readFileSync(path.resolve('cert/key.pem')),
+    cert: fs.readFileSync(path.resolve('cert/cert.pem'))
+  }
+  
+  https.createServer(options, app).listen(port, () => {
+    console.log(`HTTPS server running on https://localhost:${port}`)
+  });
+} else {
+  app.listen(port, () => {
+    console.log(`HTTP server running on http://localhost:${port}`);
+  });
+}

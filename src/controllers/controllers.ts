@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import { createUser, findUser } from "../modles/users.modles";
 import { Prisma, Uploads, User } from "@prisma/client";
-import { signJWTToken, streamFile, streamVideo, tokenExpireTime } from "../helpers/helpers";
+import jwt from 'jsonwebtoken';
+import { createSignedUrl, hashPassword, min, signJWTToken, streamFile, streamVideo, tokenExpireTime } from "../helpers/helpers";
 import path from "path";
 import os from "os";
 import fs from "fs";
@@ -15,7 +16,6 @@ import {
   updateIsShared,
 } from "../modles/uploads.modles";
 import { CustomRequest } from "../middleware/middleware";
-import { get } from "http";
 
 export class Controller {
   constructor() {}
@@ -29,7 +29,7 @@ export class Controller {
         return;
       }
       let customer: User = await createUser(user);
-      let signedToken: string = signJWTToken(user.email, customer.id);
+      let signedToken: string = signJWTToken(user.email, customer.id, tokenExpireTime);
       let uploadPath: string = path.join(
         os.homedir(),
         `/mero_drive_uploads/${customer.id}`
@@ -37,12 +37,6 @@ export class Controller {
       fs.mkdir(uploadPath, { recursive: true }, (err) => {
         if (err) throw err;
       });
-      res.cookie("access_token", `Bearer ${signedToken}`,{
-          httpOnly:true,
-          sameSite: "none",
-          secure: true,
-          expires: new Date(Date.now() + tokenExpireTime) 
-        });
       res.status(200).send(signedToken)
     } catch (e) {
       console.error(e);
@@ -62,13 +56,7 @@ export class Controller {
         return;
       }
       user = await findUser(userInfo.email, userInfo.password);
-      let signedToken: string = signJWTToken(user.email, user.id);
-        res.cookie("access_token", `Bearer ${signedToken}`,{
-          httpOnly:true,
-          sameSite: "none",
-          secure: true,
-          expires: new Date(Date.now() + tokenExpireTime)
-        });
+      let signedToken: string = signJWTToken(user.email, user.id , tokenExpireTime);
       res.status(200).send(signedToken);
     } catch (e) {
       console.error(e);
@@ -242,7 +230,7 @@ export class Controller {
 
   async getFilesByID(req: CustomRequest, res: Response) {
     let id: string = req.params.id;
-    let user: string | undefined = req.user;
+    let user: string | undefined = req.userId;
     if (!user) {
       res.status(400).send("No user id found");
       return;
@@ -264,15 +252,11 @@ export class Controller {
       return;
     }
   }
-  async getStreamVideo(req: CustomRequest, res: Response) {
+  async getStreamVideo(req: Request, res: Response) {
     let id: string = req.params.id;
-    let user: string | undefined = req.user;
-    if (!user) {
-      res.status(400).send("No user id found");
-      return;
-    }
-    if (!id) {
-      res.status(400).send("No file id found");
+    let user : string = req.params.user;
+    if (!id || !user) {
+      res.status(400).send("No file id or token found");
       return;
     }
     if (typeof id !== "string") {
@@ -280,7 +264,7 @@ export class Controller {
       return;
     }
     try {
-      let file: Uploads = await getOneFilePathByID(user, id);
+      const file = await getOneFilePathByID(user, id);
       streamVideo(req,res, file.path);
     } catch (err) {
       console.error(err);
@@ -288,5 +272,10 @@ export class Controller {
       return;
     }
 
+  }
+  async getTempToken(req: CustomRequest, res: Response)  {
+    let path = `${req.userId as string}/${req.params.fileId}`
+    let url = createSignedUrl(path, 15 * min)
+    res.status(200).send(url);
   }
 }

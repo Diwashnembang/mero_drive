@@ -4,6 +4,7 @@ import fs from "fs"
 import { Response, Request } from "express"
 import { mimeTypes } from "./mimeTypes"
 import path from "path"
+import crypto from "crypto"
 
 export const sec = 1 * 1000
 export const min = 60 * sec
@@ -11,9 +12,9 @@ export const hour = 60 * min
 export const day = 24 * hour
 export const tokenExpireTime = 15 * min
 
-export function signJWTToken(email: string,userId : string):string{
+export function signJWTToken(email: string,userId : string, time : number):string{
     let token: string = jwt.sign({
-        exp: Math.floor(Date.now() + (15 * tokenExpireTime)) ,
+        exp: Math.floor(Date.now() + (time)) ,
         sub : email,
         iat: Math.floor(Date.now() ),
         userId: userId
@@ -126,5 +127,14 @@ export function streamVideo(req: Request, res: Response , filepath: string){
     });
 
     fileStream.pipe(res);
+
+}
+
+export function createSignedUrl(resourcePath :string , validFor : number =  min){
+  let hmac = crypto.createHmac('sha256', process.env.URL_SIGNING_KEY as string)
+  let expires = Math.floor(Date.now() + validFor)
+  hmac.update("/stream/" + resourcePath + expires)
+  const sig = hmac.digest('hex');
+  return `stream/${resourcePath}?expires=${expires}&sig=${sig}`;
 
 }

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { CustomRequest, isAuth } from "../middleware/middleware";
+import { CustomRequest, isAuth, verifySignedUrl } from "../middleware/middleware";
 import { Controller } from "../controllers/controllers";
 import multer from "multer";
 import path from "path";
@@ -24,6 +24,7 @@ const upload = multer({ storage: storage })
 router.post("/login",controller.login)
 
 router.post("/signup",controller.signUp)
+router.get("/stream/:user/:id",verifySignedUrl,controller.getStreamVideo)
 
 
 router.use(isAuth)
@@ -36,7 +37,6 @@ router.get("/f/:id", controller.getSharedFile)
 router.post("/update",controller.updateIsSharedState)
 router.get("/getAllID",controller.getAllFilesID)
 router.get("/file/:id",controller.getFilesByID)
-router.get("/stream/:id",controller.getStreamVideo)
-
+router.get("/getTempToken/:fileId", controller.getTempToken)
 
 export default router;

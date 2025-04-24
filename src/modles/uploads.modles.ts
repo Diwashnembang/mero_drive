@@ -129,14 +129,14 @@ export async function getSharedFilePath(id: string): Promise<Uploads> {
     }
   }
 
-  export async function getOneFilePathByID(user : string , id: string): Promise<Uploads> {
+  export async function getOneFilePathByID(userID : string , id: string): Promise<Uploads> {
     try {
       let file: Uploads | null = await prisma.uploads.findFirst({
         where: {
           AND: [
             {
               user: {
-                email: user,
+                id: userID,
               },
             },
             {
